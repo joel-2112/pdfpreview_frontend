@@ -1,4 +1,4 @@
-import React from 'react';
+import { ThemeProvider } from './context/ThemeContext';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { PdfProvider } from './context/PdfContext';
@@ -36,20 +36,22 @@ function AppLayout() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <PdfProvider>
-        <Router>
-          <Routes>
-            {/* Public route */}
-            <Route path="/login" element={<LoginPage />} />
-            
-            {/* Protected app routes */}
-            <Route element={<ProtectedRoute />}>
-              <Route path="/*" element={<AppLayout />} />
-            </Route>
-          </Routes>
-        </Router>
-      </PdfProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <PdfProvider>
+          <Router>
+            <Routes>
+              {/* Public route */}
+              <Route path="/login" element={<LoginPage />} />
+              
+              {/* Protected app routes */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/*" element={<AppLayout />} />
+              </Route>
+            </Routes>
+          </Router>
+        </PdfProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

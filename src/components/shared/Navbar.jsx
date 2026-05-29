@@ -1,11 +1,13 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Sun, Moon, FileText, LogOut, User as UserIcon } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
-import { FileText, LogOut, User as UserIcon } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 
 export const Navbar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { isDark, toggleTheme } = useTheme();
 
   const handleLogout = () => {
     logout();
@@ -36,6 +38,13 @@ export const Navbar = () => {
                 <span className="text-sm font-medium text-slate-300">{user.name}</span>
               </div>
               
+              <button
+                onClick={toggleTheme}
+                className="flex items-center rounded-lg border border-slate-850 bg-slate-850 px-3 py-1.5 text-sm font-medium text-slate-300 hover:border-slate-700 hover:bg-slate-800 transition-all"
+              >
+                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </button>
+
               <button
                 onClick={handleLogout}
                 className="flex items-center space-x-1.5 rounded-lg border border-slate-850 bg-slate-850 px-3.5 py-1.5 text-sm font-medium text-slate-300 hover:border-red-500/20 hover:bg-red-500/10 hover:text-red-400 transition-all duration-200"
