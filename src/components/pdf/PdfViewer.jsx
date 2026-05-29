@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import usePdfViewer from '../../hooks/usePdfViewer';
+import api from '../../services/api';
 import { ADOBE_CONFIG } from '../../constants/adobeConfig';
 import PdfLoadingState from './PdfLoadingState';
 import PdfFallback from './PdfFallback';
@@ -20,12 +21,8 @@ export const PdfViewer = ({ docId, viewType = 'original', fileName = 'document.p
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`/api/documents/${docId}/secure-link?type=${viewType}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        const data = await response.json();
+        const response = await api.get(`/api/documents/${docId}/secure-link?type=${viewType}`);
+        const data = response.data;
         if (active) {
           if (data.success && data.data.signedUrl) {
             setFileUrl(data.data.signedUrl);
