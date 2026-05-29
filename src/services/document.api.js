@@ -48,6 +48,8 @@ export const documentApi = {
   convertToHtml: (id) => api.post(API_ROUTES.DOCUMENTS.CONVERT_TO_HTML(id)),
 
   getHtmlFormLink: (id) => api.get(API_ROUTES.DOCUMENTS.HTML_FORM(id)),
+
+  reanalyze: (id) => api.post(API_ROUTES.DOCUMENTS.REANALYZE(id)),
 };
 
 export default documentApi;

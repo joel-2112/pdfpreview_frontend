@@ -11,6 +11,7 @@ export const PdfXfaNotice = ({
   hasManualPreview = false,
   onPreparePreview,
   onUploadPreview,
+  onReanalyze,
   preparing = false,
   uploading = false,
   prepareError,
@@ -106,6 +107,12 @@ export const PdfXfaNotice = ({
             disabled={preparing}
           >
             {preparing ? 'Preparing…' : 'Try server flatten (pdftk)'}
+          </Button>
+        )}
+
+        {onReanalyze && (
+          <Button variant="outline" onClick={onReanalyze}>
+            Switch to HTML preview
           </Button>
         )}
 
