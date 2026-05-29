@@ -18,6 +18,13 @@ export const needsServerPreview = (doc) => {
 
 export const hasManualPreview = (doc) => Boolean(doc?.previewPath);
 
+export const shouldUseHtmlFormViewer = (doc) => {
+  if (!doc) return false;
+  return needsServerPreview(doc);
+};
+
+export const isHtmlFormReady = (doc) => doc?.htmlFormStatus === 'ready';
+
 export const canUseAdobeEmbed = (doc, usingFlattenedPreview = false) => {
   if (usingFlattenedPreview) return true;
   return !needsServerPreview(doc);

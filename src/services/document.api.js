@@ -44,6 +44,10 @@ export const documentApi = {
   getPreviewCapabilities: () => {
     return api.get(API_ROUTES.DOCUMENTS.PREVIEW_CAPABILITIES);
   },
+
+  convertToHtml: (id) => api.post(API_ROUTES.DOCUMENTS.CONVERT_TO_HTML(id)),
+
+  getHtmlFormLink: (id) => api.get(API_ROUTES.DOCUMENTS.HTML_FORM(id)),
 };
 
 export default documentApi;

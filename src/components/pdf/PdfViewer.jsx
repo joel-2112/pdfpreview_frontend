@@ -11,10 +11,12 @@ import {
   isLiveCycleXfa,
   isXfaPlaceholderBuffer,
   hasManualPreview,
+  shouldUseHtmlFormViewer,
 } from '../../utils/pdfPreviewStrategy';
 import PdfLoadingState from './PdfLoadingState';
 import PdfFallback from './PdfFallback';
 import PdfXfaNotice from './PdfXfaNotice';
+import PdfHtmlFormViewer from './PdfHtmlFormViewer';
 import { AlertTriangle } from 'lucide-react';
 
 export const PdfViewer = ({
@@ -263,6 +265,15 @@ export const PdfViewer = ({
 
   if (loading || (docId && !docMeta)) {
     return <PdfLoadingState />;
+  }
+
+  if (viewType !== 'filled' && shouldUseHtmlFormViewer(effectiveDoc)) {
+    return (
+      <PdfHtmlFormViewer
+        docId={docId}
+        pdfTitle={effectiveDoc.pdfTitle || fileName}
+      />
+    );
   }
 
   if (error && !xfaPreviewBlocked) {

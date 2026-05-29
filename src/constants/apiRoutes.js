@@ -13,6 +13,8 @@ export const API_ROUTES = {
     PREPARE_PREVIEW: (id) => `/api/documents/${id}/prepare-preview`,
     PREVIEW_PDF: (id) => `/api/documents/${id}/preview-pdf`,
     PREVIEW_CAPABILITIES: '/api/documents/preview-capabilities',
+    CONVERT_TO_HTML: (id) => `/api/documents/${id}/convert-to-html`,
+    HTML_FORM: (id) => `/api/documents/${id}/html-form`,
   },
   AUTOFILL: {
     GET_MAPPINGS: (docId) => `/api/autofill/mappings/${docId}`,
