@@ -43,12 +43,13 @@ export const PdfXfaNotice = ({
             Your PDF was built with <strong>Adobe LiveCycle Designer</strong> (IRCC / IMM forms).
             The &quot;Please wait…&quot; page is normal in the browser — Adobe Embed and Chrome only
             show that shell, not the real form. To preview in this app, upload a{' '}
-            <strong>flattened copy</strong> created in desktop Acrobat Reader.
+            <strong>flattened copy</strong> created in desktop Acrobat Reader, or configure FormVu
+            for interactive HTML preview.
           </>
         ) : (
           <>
             Adobe Embed works for normal PDFs but not XFA. Flatten the template first, then upload
-            the preview copy below.
+            the preview copy below, or configure FormVu for interactive HTML preview.
           </>
         )}
       </p>
