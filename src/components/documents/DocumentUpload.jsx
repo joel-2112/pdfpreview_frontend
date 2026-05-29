@@ -6,7 +6,7 @@ export const DocumentUpload = ({ onUploadSuccess }) => {
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [status, setStatus] = useState(null); // 'success', 'error'
+  const [status, setStatus] = useState(null);
   const [message, setMessage] = useState('');
   const fileInputRef = useRef(null);
 
@@ -82,7 +82,7 @@ export const DocumentUpload = ({ onUploadSuccess }) => {
         className={`relative flex flex-col items-center justify-center w-full min-h-[220px] p-6 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-200 ${
           dragActive
             ? 'border-brand-500 bg-brand-500/5'
-            : 'border-slate-800 bg-slate-900/20 hover:bg-slate-900/40 hover:border-slate-700'
+            : 'border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/20 hover:bg-slate-100 dark:hover:bg-slate-900/40 hover:border-slate-400 dark:hover:border-slate-700'
         }`}
       >
         <input
@@ -96,27 +96,27 @@ export const DocumentUpload = ({ onUploadSuccess }) => {
         {uploading ? (
           <div className="flex flex-col items-center w-full max-w-xs space-y-4">
             <Spinner size="md" />
-            <span className="text-sm font-semibold text-slate-300">
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
               Parsing PDF layout structure...
             </span>
-            <div className="w-full bg-slate-850 h-2 rounded-full overflow-hidden">
+            <div className="w-full bg-slate-200 dark:bg-slate-850 h-2 rounded-full overflow-hidden">
               <div
                 className="bg-brand-500 h-full transition-all duration-300 ease-out"
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <span className="text-xs text-slate-500">{progress}% uploaded</span>
+            <span className="text-xs text-slate-500 dark:text-slate-500">{progress}% uploaded</span>
           </div>
         ) : (
           <div className="flex flex-col items-center text-center space-y-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-850 text-brand-400 group-hover:text-brand-300 transition-colors">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-850 text-brand-600 dark:text-brand-400 group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors">
               <Upload className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-sm font-bold text-white">Drag and drop your PDF here</p>
-              <p className="text-xs text-slate-500 mt-1">or click to browse from local disk</p>
+              <p className="text-sm font-bold text-slate-900 dark:text-white">Drag and drop your PDF here</p>
+              <p className="text-xs text-slate-600 dark:text-slate-500 mt-1">or click to browse from local disk</p>
             </div>
-            <span className="inline-block px-3 py-1 bg-slate-950/40 border border-slate-850 rounded-lg text-slate-500 text-[10px] uppercase font-bold tracking-wider">
+            <span className="inline-block px-3 py-1 bg-slate-100 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-850 rounded-lg text-slate-600 dark:text-slate-500 text-[10px] uppercase font-bold tracking-wider">
               Acroform & static XFA supported
             </span>
           </div>
@@ -126,8 +126,8 @@ export const DocumentUpload = ({ onUploadSuccess }) => {
       {status && (
         <div className={`mt-4 flex items-center space-x-3 rounded-xl border p-4 text-sm animate-fade-in ${
           status === 'success'
-            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
-            : 'border-red-500/20 bg-red-500/10 text-red-400'
+            ? 'border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+            : 'border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400'
         }`}>
           {status === 'success' ? (
             <CheckCircle className="h-5 w-5 shrink-0" />
