@@ -11,6 +11,7 @@ export const API_ROUTES = {
     DELETE: (id) => `/api/documents/${id}`,
     SECURE_LINK: (id) => `/api/documents/${id}/secure-link`,
     PREPARE_PREVIEW: (id) => `/api/documents/${id}/prepare-preview`,
+    PREVIEW_PDF: (id) => `/api/documents/${id}/preview-pdf`,
     PREVIEW_CAPABILITIES: '/api/documents/preview-capabilities',
   },
   AUTOFILL: {

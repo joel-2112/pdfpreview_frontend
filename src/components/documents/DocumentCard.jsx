@@ -2,7 +2,7 @@ import React from 'react';
 import { FileText, Eye, Database, Trash2, Calendar, FileSpreadsheet } from 'lucide-react';
 import PdfTypeDetector from '../pdf/PdfTypeDetector';
 import Button from '../shared/Button';
-import { needsServerPreview } from '../../utils/pdfPreviewStrategy';
+import { needsServerPreview, isLiveCycleXfa } from '../../utils/pdfPreviewStrategy';
 
 export const DocumentCard = ({ doc, onView, onAutofill, onMapping, onDelete }) => {
   const formatDate = (dateString) => {
@@ -19,6 +19,8 @@ export const DocumentCard = ({ doc, onView, onAutofill, onMapping, onDelete }) =
   };
 
   const isXfaTemplate = needsServerPreview(doc);
+  const liveCycle = isLiveCycleXfa(doc);
+  const previewAttached = Boolean(doc.previewPath);
 
   return (
     <div className="relative flex flex-col justify-between p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/30 hover:border-brand-500/30 dark:hover:border-brand-500/30 hover:shadow-lg dark:hover:bg-slate-900/50 transition-all duration-300 shadow-sm dark:shadow-xl group hover:scale-[1.01]">
@@ -61,13 +63,23 @@ export const DocumentCard = ({ doc, onView, onAutofill, onMapping, onDelete }) =
           onClick={() => onView(doc, 'original')}
           icon={Eye}
           title={
-            isXfaTemplate
-              ? 'Opens Adobe Embed after server flattening (Prepare preview if needed)'
-              : 'Preview in Adobe Embed'
+            liveCycle
+              ? previewAttached
+                ? 'Preview flattened copy in Adobe Embed'
+                : 'Upload flattened PDF from Acrobat Print-to-PDF first'
+              : isXfaTemplate
+                ? 'XFA — flatten or upload preview PDF'
+                : 'Preview in Adobe Embed'
           }
           className="text-xs border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
         >
-          {isXfaTemplate ? 'Preview (XFA)' : 'Preview'}
+          {liveCycle
+            ? previewAttached
+              ? 'Preview'
+              : 'Preview (needs flat PDF)'
+            : isXfaTemplate
+              ? 'Preview (XFA)'
+              : 'Preview'}
         </Button>
         
         <Button

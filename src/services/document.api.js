@@ -33,6 +33,14 @@ export const documentApi = {
     return api.post(API_ROUTES.DOCUMENTS.PREPARE_PREVIEW(id));
   },
 
+  uploadPreviewPdf: (id, file) => {
+    const formData = new FormData();
+    formData.append('pdf', file);
+    return api.post(API_ROUTES.DOCUMENTS.PREVIEW_PDF(id), formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
   getPreviewCapabilities: () => {
     return api.get(API_ROUTES.DOCUMENTS.PREVIEW_CAPABILITIES);
   },

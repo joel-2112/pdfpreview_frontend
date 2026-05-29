@@ -8,6 +8,9 @@ import {
   needsServerPreview,
   getSecureLinkType,
   getEffectivePdfTypeForViewer,
+  isLiveCycleXfa,
+  isXfaPlaceholderBuffer,
+  hasManualPreview,
 } from '../../utils/pdfPreviewStrategy';
 import PdfLoadingState from './PdfLoadingState';
 import PdfFallback from './PdfFallback';
@@ -31,6 +34,8 @@ export const PdfViewer = ({
   const [xfaPreviewBlocked, setXfaPreviewBlocked] = useState(false);
   const [usingFlattenedPreview, setUsingFlattenedPreview] = useState(false);
   const [preparingPreview, setPreparingPreview] = useState(false);
+  const [uploadingPreview, setUploadingPreview] = useState(false);
+  const [linkRefreshKey, setLinkRefreshKey] = useState(0);
 
   // Always load metadata from API so XFA / field counts are accurate for routing
   useEffect(() => {
@@ -115,7 +120,32 @@ export const PdfViewer = ({
     };
 
     fetchSignedLink();
-  }, [docId, viewType, docMeta, effectiveDoc.type, effectiveDoc.hasXfa]);
+  }, [docId, viewType, docMeta, effectiveDoc.type, effectiveDoc.hasXfa, linkRefreshKey]);
+
+  const handleUploadPreview = useCallback(
+    async (file) => {
+      setUploadingPreview(true);
+      setError(null);
+      try {
+        const res = await documentApi.uploadPreviewPdf(docId, file);
+        if (res.data?.success) {
+          setDocMeta(res.data.data);
+          setXfaPreviewBlocked(false);
+          setLinkRefreshKey((k) => k + 1);
+        } else {
+          setError(res.data?.message || 'Upload failed.');
+        }
+      } catch (err) {
+        setError(
+          err.response?.data?.message ||
+            'Invalid preview file. Use Print → Save as PDF from Acrobat Reader after the form fully loads.'
+        );
+      } finally {
+        setUploadingPreview(false);
+      }
+    },
+    [docId]
+  );
 
   const handlePreparePreview = useCallback(async () => {
     setPreparingPreview(true);
@@ -168,6 +198,11 @@ export const PdfViewer = ({
         }
         if (!res.ok) throw new Error('Physical PDF content streaming failed.');
         const buffer = await res.arrayBuffer();
+
+        if (isXfaPlaceholderBuffer(buffer)) {
+          setXfaPreviewBlocked(true);
+          return;
+        }
 
         if (!window.AdobeDC) {
           throw new Error('Adobe PDF View SDK missing.');
@@ -245,8 +280,13 @@ export const PdfViewer = ({
       <PdfXfaNotice
         url={fileUrl}
         fileName={fileName}
-        onPreparePreview={handlePreparePreview}
+        pdfTitle={effectiveDoc.pdfTitle}
+        liveCycleXfa={isLiveCycleXfa(effectiveDoc)}
+        hasManualPreview={hasManualPreview(effectiveDoc)}
+        onPreparePreview={isLiveCycleXfa(effectiveDoc) ? undefined : handlePreparePreview}
+        onUploadPreview={handleUploadPreview}
         preparing={preparingPreview}
+        uploading={uploadingPreview}
         prepareError={error}
       />
     );
