@@ -16,7 +16,7 @@ import NotFoundPage from './pages/NotFoundPage';
 
 function AppLayout() {
   return (
-    <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100 antialiased">
+    <div className="flex min-h-screen flex-col bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100 antialiased">
       <Navbar />
       <div className="flex flex-1 flex-col md:flex-row">
         <Sidebar />

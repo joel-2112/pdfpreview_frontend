@@ -11,7 +11,7 @@ export const Sidebar = () => {
   ];
 
   return (
-    <aside className="w-full md:w-64 shrink-0 border-r border-slate-800 bg-slate-900/50 p-4 space-y-2 md:sticky md:top-16 md:h-[calc(100vh-4rem)]">
+    <aside className="w-full md:w-64 shrink-0 border-r border-slate-800 bg-white/50 dark:bg-slate-900/50 p-4 space-y-2 md:sticky md:top-16 md:h-[calc(100vh-4rem)]">
       <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
         Navigation
       </div>
