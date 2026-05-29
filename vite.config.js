@@ -7,11 +7,11 @@ export default defineConfig({
     port: 5173,
     allowedHosts: [
       'localhost',
-      'fool-mulch-unroll.ngrok-free.dev'
+      'https://pdfpreview-adobe.vercel.app'
     ],
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'https://fool-mulch-unroll.ngrok-free.dev/',
         changeOrigin: true,
         secure: false,
       }
