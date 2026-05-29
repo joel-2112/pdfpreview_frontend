@@ -122,6 +122,8 @@ export const AutofillPage = () => {
                 docId={activeDoc._id}
                 viewType="filled"
                 fileName={`filled-${activeDoc.originalName}`}
+                pdfType={activeDoc.type}
+                hasXfa={activeDoc.hasXfa}
               />
             </div>
           ) : (

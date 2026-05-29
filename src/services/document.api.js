@@ -27,7 +27,15 @@ export const documentApi = {
   
   getSecureLink: (id, type = 'original') => {
     return api.get(`${API_ROUTES.DOCUMENTS.SECURE_LINK(id)}?type=${type}`);
-  }
+  },
+
+  preparePreview: (id) => {
+    return api.post(API_ROUTES.DOCUMENTS.PREPARE_PREVIEW(id));
+  },
+
+  getPreviewCapabilities: () => {
+    return api.get(API_ROUTES.DOCUMENTS.PREVIEW_CAPABILITIES);
+  },
 };
 
 export default documentApi;

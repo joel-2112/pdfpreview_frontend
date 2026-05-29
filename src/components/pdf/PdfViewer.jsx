@@ -1,34 +1,109 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import usePdfViewer from '../../hooks/usePdfViewer';
 import api from '../../services/api';
-import { ADOBE_CONFIG } from '../../constants/adobeConfig';
+import documentApi from '../../services/document.api';
+import { ADOBE_CONFIG, getAdobeViewSettings } from '../../constants/adobeConfig';
+import { PDF_TYPES } from '../../constants/pdfTypes';
+import {
+  needsServerPreview,
+  getSecureLinkType,
+  getEffectivePdfTypeForViewer,
+} from '../../utils/pdfPreviewStrategy';
 import PdfLoadingState from './PdfLoadingState';
 import PdfFallback from './PdfFallback';
+import PdfXfaNotice from './PdfXfaNotice';
 import { AlertTriangle } from 'lucide-react';
 
-export const PdfViewer = ({ docId, viewType = 'original', fileName = 'document.pdf' }) => {
+export const PdfViewer = ({
+  docId,
+  viewType = 'original',
+  fileName = 'document.pdf',
+  pdfType: pdfTypeProp,
+  hasXfa: hasXfaProp,
+}) => {
   const containerRef = useRef(null);
   const { sdkReady, error: sdkError } = usePdfViewer();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [useFallback, setUseFallback] = useState(false);
   const [fileUrl, setFileUrl] = useState('');
+  const [docMeta, setDocMeta] = useState(null);
+  const [xfaPreviewBlocked, setXfaPreviewBlocked] = useState(false);
+  const [usingFlattenedPreview, setUsingFlattenedPreview] = useState(false);
+  const [preparingPreview, setPreparingPreview] = useState(false);
 
-  // 1. Fetch temporal signed url token on load
+  // Always load metadata from API so XFA / field counts are accurate for routing
+  useEffect(() => {
+    let active = true;
+    const loadMeta = async () => {
+      try {
+        const res = await documentApi.getOne(docId);
+        if (active && res.data?.success) {
+          const doc = res.data.data;
+          setDocMeta({
+            ...doc,
+            type: pdfTypeProp ?? doc.type,
+            hasXfa: hasXfaProp ?? doc.hasXfa,
+          });
+        }
+      } catch {
+        if (active) {
+          setDocMeta({
+            type: pdfTypeProp || PDF_TYPES.ACROFORM,
+            hasXfa: Boolean(hasXfaProp),
+            fields: [],
+          });
+        }
+      }
+    };
+    if (docId) loadMeta();
+    return () => {
+      active = false;
+    };
+  }, [docId, pdfTypeProp, hasXfaProp]);
+
+  const effectiveDoc = docMeta || {
+    type: pdfTypeProp || PDF_TYPES.ACROFORM,
+    hasXfa: hasXfaProp || false,
+    fields: [],
+  };
+
+  const requiresXfaConversion =
+    viewType !== 'filled' && needsServerPreview(effectiveDoc);
+  const embedPdfType = getEffectivePdfTypeForViewer(effectiveDoc, usingFlattenedPreview);
+
+  // Fetch signed URL (uses type=preview for XFA so backend serves flattened PDF when available)
   useEffect(() => {
     let active = true;
     const fetchSignedLink = async () => {
+      if (!docId || !docMeta) return;
+
       setLoading(true);
       setError(null);
+      setXfaPreviewBlocked(false);
+      setUsingFlattenedPreview(false);
+
+      const linkType = getSecureLinkType(effectiveDoc, viewType);
+
       try {
-        const response = await api.get(`/api/documents/${docId}/secure-link?type=${viewType}`);
+        const response = await api.get(
+          `/api/documents/${docId}/secure-link?type=${linkType}`
+        );
         const data = response.data;
-        if (active) {
-          if (data.success && data.data.signedUrl) {
+
+        if (!active) return;
+
+        if (data.success && data.data.signedUrl) {
+          const previewReady = data.data.previewReady !== false;
+          if (linkType === 'preview' && !previewReady) {
+            setXfaPreviewBlocked(true);
             setFileUrl(data.data.signedUrl);
           } else {
-            setError(data.message || 'Failed to generate secure PDF streaming token.');
+            setUsingFlattenedPreview(linkType === 'preview');
+            setFileUrl(data.data.signedUrl);
           }
+        } else {
+          setError(data.message || 'Failed to generate secure PDF streaming token.');
         }
       } catch (err) {
         if (active) {
@@ -38,25 +113,59 @@ export const PdfViewer = ({ docId, viewType = 'original', fileName = 'document.p
         if (active) setLoading(false);
       }
     };
-    
-    if (docId) fetchSignedLink();
-    
-    return () => {
-      active = false;
-    };
-  }, [docId, viewType]);
 
-  // 2. Initialize Adobe PDF Embed API once SDK and URL are ready
+    fetchSignedLink();
+  }, [docId, viewType, docMeta, effectiveDoc.type, effectiveDoc.hasXfa]);
+
+  const handlePreparePreview = useCallback(async () => {
+    setPreparingPreview(true);
+    setError(null);
+    try {
+      const res = await documentApi.preparePreview(docId);
+      if (res.data?.success) {
+        setXfaPreviewBlocked(false);
+        const linkRes = await api.get(`/api/documents/${docId}/secure-link?type=preview`);
+        if (linkRes.data?.success && linkRes.data.data.signedUrl) {
+          setUsingFlattenedPreview(true);
+          setFileUrl(linkRes.data.data.signedUrl);
+          setUseFallback(false);
+        }
+      } else {
+        setError(res.data?.message || 'Could not prepare preview.');
+      }
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          'Server could not flatten this XFA PDF. Install pdftk on the backend or re-upload as AcroForm.'
+      );
+    } finally {
+      setPreparingPreview(false);
+    }
+  }, [docId]);
+
+  // Adobe PDF Embed (AcroForm, flat, or server-flattened XFA only)
   useEffect(() => {
-    if (!sdkReady || !fileUrl || loading || error || useFallback) return;
+    if (
+      xfaPreviewBlocked ||
+      !sdkReady ||
+      !fileUrl ||
+      loading ||
+      error ||
+      useFallback
+    ) {
+      return;
+    }
 
-    let adobeDCView = null;
+    let previewFailed = false;
     const viewDivId = `adobe-pdf-view-${docId}-${viewType}`;
 
     const renderAdobeView = async () => {
       try {
-        // Fetch document ArrayBuffer directly through same-origin endpoint to prevent CORS blocks
         const res = await fetch(fileUrl);
+        if (res.status === 503) {
+          setXfaPreviewBlocked(true);
+          return;
+        }
         if (!res.ok) throw new Error('Physical PDF content streaming failed.');
         const buffer = await res.arrayBuffer();
 
@@ -64,34 +173,64 @@ export const PdfViewer = ({ docId, viewType = 'original', fileName = 'document.p
           throw new Error('Adobe PDF View SDK missing.');
         }
 
-        adobeDCView = new window.AdobeDC.View({
+        const adobeDCView = new window.AdobeDC.View({
           clientId: ADOBE_CONFIG.CLIENT_ID,
           divId: viewDivId,
         });
 
-        adobeDCView.previewFile({
-          content: { promise: Promise.resolve(buffer) },
-          metaData: { fileName: fileName }
-        }, ADOBE_CONFIG.DEFAULT_VIEW_SETTINGS);
+        adobeDCView.registerCallback(
+          window.AdobeDC.View.Enum.CallbackType.EVENT_LISTENER,
+          (event) => {
+            if (
+              event.type === 'DOCUMENT_OPEN_FAILED' ||
+              event.type === 'APP_RENDERING_FAILED'
+            ) {
+              if (!previewFailed) {
+                previewFailed = true;
+                setUseFallback(true);
+              }
+            }
+          },
+          {}
+        );
 
+        await adobeDCView.previewFile(
+          {
+            content: { promise: Promise.resolve(buffer) },
+            metaData: { fileName },
+          },
+          getAdobeViewSettings(embedPdfType)
+        );
       } catch (err) {
-        console.error('Adobe Embed API crash, routing to fallback renderer:', err);
-        setUseFallback(true);
+        console.error('Adobe Embed API error:', err);
+        if (requiresXfaConversion) {
+          setXfaPreviewBlocked(true);
+        } else {
+          setUseFallback(true);
+        }
       }
     };
 
     renderAdobeView();
+  }, [
+    xfaPreviewBlocked,
+    sdkReady,
+    fileUrl,
+    loading,
+    error,
+    docId,
+    viewType,
+    fileName,
+    embedPdfType,
+    useFallback,
+    requiresXfaConversion,
+  ]);
 
-    return () => {
-      // Cleanup visual handlers if any
-    };
-  }, [sdkReady, fileUrl, loading, error, docId, viewType, fileName, useFallback]);
-
-  if (loading) {
+  if (loading || (docId && !docMeta)) {
     return <PdfLoadingState />;
   }
 
-  if (error) {
+  if (error && !xfaPreviewBlocked) {
     return (
       <div className="flex h-96 w-full flex-col items-center justify-center rounded-2xl border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/5 p-6 text-center">
         <AlertTriangle className="mb-4 h-12 w-12 text-red-600 dark:text-red-500" />
@@ -101,15 +240,41 @@ export const PdfViewer = ({ docId, viewType = 'original', fileName = 'document.p
     );
   }
 
+  if (xfaPreviewBlocked) {
+    return (
+      <PdfXfaNotice
+        url={fileUrl}
+        fileName={fileName}
+        onPreparePreview={handlePreparePreview}
+        preparing={preparingPreview}
+        prepareError={error}
+      />
+    );
+  }
+
   if (useFallback || sdkError) {
-    // If Adobe client crashes, route to high-fidelity react-pdf renderer
-    return <PdfFallback url={fileUrl} />;
+    return (
+      <div className="space-y-3">
+        {effectiveDoc.hasXfa && !usingFlattenedPreview && (
+          <p className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-2 text-xs text-amber-700 dark:text-amber-300">
+            This PDF includes XFA. Adobe Embed may not render it correctly — use Prepare preview
+            or upload a flattened AcroForm copy.
+          </p>
+        )}
+        <PdfFallback url={fileUrl} />
+      </div>
+    );
   }
 
   const viewDivId = `adobe-pdf-view-${docId}-${viewType}`;
 
   return (
     <div className="relative w-full h-[calc(100vh-12rem)] min-h-[500px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-2xl overflow-hidden shadow-lg dark:shadow-2xl">
+      {usingFlattenedPreview && (
+        <p className="absolute top-0 left-0 right-0 z-10 border-b border-emerald-500/20 bg-emerald-500/10 px-4 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+          Showing server-flattened preview (Adobe Embed)
+        </p>
+      )}
       <div id={viewDivId} className="w-full h-full" ref={containerRef} />
     </div>
   );

@@ -117,7 +117,7 @@ export const DocumentUpload = ({ onUploadSuccess }) => {
               <p className="text-xs text-slate-600 dark:text-slate-500 mt-1">or click to browse from local disk</p>
             </div>
             <span className="inline-block px-3 py-1 bg-slate-100 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-850 rounded-lg text-slate-600 dark:text-slate-500 text-[10px] uppercase font-bold tracking-wider">
-              Acroform & static XFA supported
+              AcroForm preview in browser · XFA requires server flattening
             </span>
           </div>
         )}

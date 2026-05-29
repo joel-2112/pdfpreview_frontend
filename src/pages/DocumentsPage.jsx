@@ -83,6 +83,8 @@ export const DocumentsPage = () => {
           docId={selectedDoc._id}
           viewType={viewType}
           fileName={selectedDoc.originalName}
+          pdfType={selectedDoc.type}
+          hasXfa={Boolean(selectedDoc.hasXfa)}
         />
       )}
     </div>

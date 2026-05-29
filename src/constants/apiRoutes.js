@@ -9,7 +9,9 @@ export const API_ROUTES = {
     GET_ALL: '/api/documents',
     GET_ONE: (id) => `/api/documents/${id}`,
     DELETE: (id) => `/api/documents/${id}`,
-    SECURE_LINK: (id) => `/api/documents/${id}/secure-link`
+    SECURE_LINK: (id) => `/api/documents/${id}/secure-link`,
+    PREPARE_PREVIEW: (id) => `/api/documents/${id}/prepare-preview`,
+    PREVIEW_CAPABILITIES: '/api/documents/preview-capabilities',
   },
   AUTOFILL: {
     GET_MAPPINGS: (docId) => `/api/autofill/mappings/${docId}`,
