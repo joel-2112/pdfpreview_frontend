@@ -93,10 +93,10 @@ export const PdfViewer = ({ docId, viewType = 'original', fileName = 'document.p
 
   if (error) {
     return (
-      <div className="flex h-96 w-full flex-col items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/5 p-6 text-center">
-        <AlertTriangle className="mb-4 h-12 w-12 text-red-500" />
-        <h4 className="mb-2 font-bold text-white text-base">Failed to stream PDF</h4>
-        <p className="text-sm text-slate-400 max-w-md">{error}</p>
+      <div className="flex h-96 w-full flex-col items-center justify-center rounded-2xl border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/5 p-6 text-center">
+        <AlertTriangle className="mb-4 h-12 w-12 text-red-600 dark:text-red-500" />
+        <h4 className="mb-2 font-bold text-slate-900 dark:text-white text-base">Failed to stream PDF</h4>
+        <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md">{error}</p>
       </div>
     );
   }
@@ -109,7 +109,7 @@ export const PdfViewer = ({ docId, viewType = 'original', fileName = 'document.p
   const viewDivId = `adobe-pdf-view-${docId}-${viewType}`;
 
   return (
-    <div className="relative w-full h-[calc(100vh-12rem)] min-h-[500px] border border-slate-800 bg-slate-950 rounded-2xl overflow-hidden shadow-2xl">
+    <div className="relative w-full h-[calc(100vh-12rem)] min-h-[500px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-2xl overflow-hidden shadow-lg dark:shadow-2xl">
       <div id={viewDivId} className="w-full h-full" ref={containerRef} />
     </div>
   );
