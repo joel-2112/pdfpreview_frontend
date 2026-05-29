@@ -7,7 +7,7 @@ export const Sidebar = () => {
     { to: '/', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/documents', label: 'My Documents', icon: FolderOpen },
     { to: '/autofill', label: 'User Profile Form', icon: Database },
-    { to: '/field-mappings', label: 'Field Mappings', icon: FileSpreadsheet },
+    // { to: '/field-mappings', label: 'Field Mappings', icon: FileSpreadsheet },
   ];
 
   return (
