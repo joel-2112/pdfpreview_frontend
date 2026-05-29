@@ -20,10 +20,10 @@ export const DashboardPage = () => {
   const flatCount = documents.filter(d => d.type === 'flat').length;
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 animate-fade-in bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100">
       {/* Title */}
       <div>
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
           Dashboard Overview
         </h2>
         <p className="text-sm text-slate-500 mt-1">
@@ -34,13 +34,13 @@ export const DashboardPage = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[
-          { label: 'Total PDFs', val: totalCount, color: 'text-brand-400' },
-          { label: 'Standard AcroForms', val: acroFormCount, color: 'text-blue-400' },
-          { label: 'XFA Templates', val: xfaCount, color: 'text-amber-400' },
-          { label: 'Flat Documents', val: flatCount, color: 'text-emerald-400' },
+          { label: 'Total PDFs', val: totalCount, color: 'text-brand-600 dark:text-brand-400' },
+          { label: 'Standard AcroForms', val: acroFormCount, color: 'text-blue-600 dark:text-blue-400' },
+          { label: 'XFA Templates', val: xfaCount, color: 'text-amber-600 dark:text-amber-400' },
+          { label: 'Flat Documents', val: flatCount, color: 'text-emerald-600 dark:text-emerald-400' },
         ].map((stat, i) => (
-          <div key={i} className="p-6 rounded-2xl border border-slate-800 bg-slate-900/30 shadow-xl">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{stat.label}</span>
+          <div key={i} className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/30 shadow-sm dark:shadow-xl">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{stat.label}</span>
             <h3 className={`text-3xl font-extrabold mt-2 tracking-tight ${stat.color}`}>{stat.val}</h3>
           </div>
         ))}
@@ -49,13 +49,13 @@ export const DashboardPage = () => {
       {/* Main Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* Quick Upload Panel */}
-        <div className="lg:col-span-4 flex flex-col justify-between p-6 rounded-2xl border border-slate-800 bg-slate-900/30 shadow-xl space-y-6">
+        <div className="lg:col-span-4 flex flex-col justify-between p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/30 shadow-sm dark:shadow-xl space-y-6">
           <div className="space-y-2">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-500/10 text-brand-400">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400">
               <UploadCloud className="h-5.5 w-5.5" />
             </div>
-            <h4 className="text-base font-bold text-white tracking-tight">Upload new PDF template</h4>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <h4 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">Upload new PDF template</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
               Upload your form template. The server will dynamically analyze and map all form layout fields.
             </p>
           </div>
@@ -67,11 +67,11 @@ export const DashboardPage = () => {
         </div>
 
         {/* Recently Uploaded */}
-        <div className="lg:col-span-8 flex flex-col justify-between p-6 rounded-2xl border border-slate-800 bg-slate-900/30 shadow-xl">
+        <div className="lg:col-span-8 flex flex-col justify-between p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/30 shadow-sm dark:shadow-xl">
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-850 pb-4">
-              <h4 className="text-base font-bold text-white tracking-tight">Recently Processed Templates</h4>
-              <Link to="/documents" className="text-xs font-bold text-brand-400 hover:text-brand-300 flex items-center space-x-1.5 transition-colors">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-850 pb-4">
+              <h4 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">Recently Processed Templates</h4>
+              <Link to="/documents" className="text-xs font-bold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 flex items-center space-x-1.5 transition-colors">
                 <span>View All</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </Link>
