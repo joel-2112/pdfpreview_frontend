@@ -54,12 +54,13 @@ export const AutofillPage = () => {
     try {
       // Endpoint that signs the URL request securely
       const res = await api.post(`/api/documents/${activeDoc._id}/sign-url`, { viewType: 'filled' });
-      if (res.data && res.data.signedUrl) {
-        setSignedDownloadUrl(res.data.signedUrl);
+      const payload = res.data?.data || res.data;
+      if (payload && payload.signedUrl) {
+        setSignedDownloadUrl(payload.signedUrl);
         
         // Programmatic trigger for seamless downloading
         const link = document.createElement('a');
-        link.href = res.data.signedUrl;
+        link.href = payload.signedUrl;
         link.setAttribute('download', `filled-${activeDoc.originalName}`);
         document.body.appendChild(link);
         link.click();

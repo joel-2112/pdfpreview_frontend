@@ -7,6 +7,7 @@ import documentApi from '../../services/document.api';
 import PdfLoadingState from './PdfLoadingState';
 import { AlertTriangle, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
 
+// Setup global worker with proper extension matching your current bundler settings
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 export const PdfViewer = ({
@@ -24,6 +25,12 @@ export const PdfViewer = ({
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.0);
+
+  // 1. CRITICAL FIX: Memoize options to completely eliminate the nested warning lookups
+  const pdfOptions = useMemo(() => ({
+    cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
+    cMapPacked: true,
+  }), []);
 
   useEffect(() => {
     let active = true;
@@ -184,6 +191,7 @@ export const PdfViewer = ({
       <div className="flex-1 overflow-auto bg-slate-100 dark:bg-slate-900 p-4 flex justify-center custom-scrollbar">
         {fileUrl && (
           <Document
+            key={fileUrl} // Safely clears canvas cash on backend token renewals
             file={fileUrl}
             onLoadSuccess={onDocumentLoadSuccess}
             onLoadError={onDocumentLoadError}
@@ -193,10 +201,7 @@ export const PdfViewer = ({
                 Failed to load PDF using react-pdf.
               </div>
             }
-            options={{
-              cMapUrl: 'https://unpkg.com/pdfjs-dist@4.4.162/cmaps/',
-              cMapPacked: true,
-            }}
+            options={pdfOptions}
           >
             <Page 
               pageNumber={pageNumber} 
@@ -204,6 +209,8 @@ export const PdfViewer = ({
               renderTextLayer={true}
               renderAnnotationLayer={true}
               renderInteractiveForms={true}
+              // 🛠️ THE CRITICAL STRUCTURE TREE ESCAPE HATCH:
+              renderStructTree={false} 
             />
           </Document>
         )}
