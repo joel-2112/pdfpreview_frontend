@@ -1,13 +1,9 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import api from '../../services/api';
 import documentApi from '../../services/document.api';
-import { PDF_TYPES } from '../../constants/pdfTypes';
-import { ADOBE_CONFIG, getAdobeViewSettings } from '../../constants/adobeConfig';
-import { canUseAdobeEmbed, getEffectivePdfTypeForViewer } from '../../utils/pdfPreviewStrategy';
-import usePdfViewer from '../../hooks/usePdfViewer';
 import PdfLoadingState from './PdfLoadingState';
 import { AlertTriangle, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
 
@@ -28,9 +24,6 @@ export const PdfViewer = ({
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.0);
-  const containerRef = useRef(null);
-
-  const { sdkReady, loading: sdkLoading, error: sdkError } = usePdfViewer();
 
   useEffect(() => {
     let active = true;
@@ -47,11 +40,6 @@ export const PdfViewer = ({
     if (docId) loadMeta();
     return () => { active = false; };
   }, [docId]);
-
-  const canEmbed = useMemo(
-    () => canUseAdobeEmbed(docMeta, viewType === 'preview' && Boolean(docMeta?.previewPath)),
-    [docMeta, viewType]
-  );
 
   useEffect(() => {
     if (!docId) return undefined;
@@ -82,47 +70,29 @@ export const PdfViewer = ({
     return () => { active = false; };
   }, [docId, viewType]);
 
-  useEffect(() => {
-    if (!sdkReady || !canEmbed || !fileUrl || !docMeta) return;
-    if (!containerRef.current) return;
-
-    const viewerContainerId = `adobe-viewer-${docId}-${viewType}`;
-    const container = containerRef.current;
-    container.innerHTML = '';
-
-    const adobeView = new window.AdobeDC.View({
-      clientId: ADOBE_CONFIG.CLIENT_ID,
-      divId: viewerContainerId,
-    });
-
-    const previewFile = {
-      content: { location: { url: fileUrl } },
-      metaData: { fileName: fileName || 'document.pdf' },
-    };
-
-    const embedConfig = {
-      embedMode: ADOBE_CONFIG.EMBED_MODE,
-      ...getAdobeViewSettings(getEffectivePdfTypeForViewer(docMeta, viewType === 'preview' && Boolean(docMeta.previewPath))),
-    };
-
-    adobeView.previewFile(previewFile, embedConfig);
-  }, [sdkReady, canEmbed, fileUrl, docMeta, docId, viewType, fileName]);
-
   const onDocumentLoadSuccess = ({ numPages }) => {
     setNumPages(numPages);
     setPageNumber(1);
   };
 
-  if (loading || (docId && !docMeta) || (canEmbed && sdkLoading)) {
+  const onDocumentLoadError = (error) => {
+    setError(error.message || 'Failed to load PDF');
+    setLoading(false);
+  };
+
+  if (loading || (docId && !docMeta)) {
     return <PdfLoadingState />;
   }
 
-  if (error && !canEmbed) {
+  if (error) {
     return (
       <div className="flex h-96 w-full flex-col items-center justify-center rounded-2xl border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/5 p-6 text-center">
         <AlertTriangle className="mb-4 h-12 w-12 text-red-600 dark:text-red-500" />
-        <h4 className="mb-2 font-bold text-slate-900 dark:text-white text-base">Failed to stream PDF</h4>
+        <h4 className="mb-2 font-bold text-slate-900 dark:text-white text-base">Failed to load PDF</h4>
         <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md">{error}</p>
+        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+          This PDF may use an unsupported format. Try opening it in Adobe Acrobat Reader.
+        </p>
       </div>
     );
   }
@@ -172,45 +142,32 @@ export const PdfViewer = ({
 
       {/* Document Viewport */}
       <div className="flex-1 overflow-auto bg-slate-100 dark:bg-slate-900 p-4 flex justify-center custom-scrollbar">
-        {canEmbed ? (
-          <div
-            id={`adobe-viewer-${docId}-${viewType}`}
-            ref={containerRef}
-            className="w-full h-full"
-          />
-        ) : (
-          fileUrl && (
-            <Document
-              file={fileUrl}
-              onLoadSuccess={onDocumentLoadSuccess}
-              loading={<PdfLoadingState />}
-              error={
-                <div className="text-red-500 bg-red-50 p-4 rounded-lg">
-                  Failed to load PDF using react-pdf.
-                </div>
-              }
-              options={{
-                cMapUrl: 'https://unpkg.com/pdfjs-dist@4.4.162/cmaps/',
-                cMapPacked: true,
-              }}
-            >
-              <Page 
-                pageNumber={pageNumber} 
-                scale={scale} 
-                renderTextLayer={true}
-                renderAnnotationLayer={true}
-                renderInteractiveForms={true}
-              />
-            </Document>
-          )
+        {fileUrl && (
+          <Document
+            file={fileUrl}
+            onLoadSuccess={onDocumentLoadSuccess}
+            onLoadError={onDocumentLoadError}
+            loading={<PdfLoadingState />}
+            error={
+              <div className="text-red-500 bg-red-50 p-4 rounded-lg">
+                Failed to load PDF using react-pdf.
+              </div>
+            }
+            options={{
+              cMapUrl: 'https://unpkg.com/pdfjs-dist@4.4.162/cmaps/',
+              cMapPacked: true,
+            }}
+          >
+            <Page 
+              pageNumber={pageNumber} 
+              scale={scale} 
+              renderTextLayer={true}
+              renderAnnotationLayer={true}
+              renderInteractiveForms={true}
+            />
+          </Document>
         )}
       </div>
-
-      {canEmbed && sdkError && (
-        <div className="absolute bottom-4 left-4 right-4 rounded-2xl border border-amber-300/40 bg-amber-50/90 p-4 text-sm text-amber-700 shadow-lg">
-          <strong>Adobe preview failed:</strong> {sdkError}. The viewer may still work after refresh.
-        </div>
-      )}
     </div>
   );
 };
