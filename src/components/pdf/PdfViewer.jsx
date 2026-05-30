@@ -50,33 +50,42 @@ export const PdfViewer = ({
       setError(null);
       
       try {
+        console.log('Fetching signed link for docId:', docId, 'viewType:', viewType);
         const response = await api.get(`/api/documents/${docId}/secure-link?type=${viewType}`);
         const data = response.data;
+        console.log('Signed link response:', data);
         if (!active) return;
 
         if (data.success && data.data.signedUrl) {
+          console.log('Signed URL received:', data.data.signedUrl);
           // Check if XFA preview needs flattening
           if (viewType === 'preview' && data.data.needsXfaPreview && !data.data.previewReady) {
+            console.log('XFA preview needs flattening, calling prepare-preview');
             // Try to prepare preview automatically
             try {
               await api.post(`/api/documents/${docId}/prepare-preview`);
+              console.log('Preview prepared, refetching signed link');
               // Refetch the secure link after preparing
               const retryResponse = await api.get(`/api/documents/${docId}/secure-link?type=${viewType}`);
               if (retryResponse.data?.success && retryResponse.data.data.signedUrl) {
+                console.log('Retry signed URL received:', retryResponse.data.data.signedUrl);
                 setFileUrl(retryResponse.data.data.signedUrl);
               } else {
                 setError('XFA form requires flattening. Please upload a flattened preview PDF or open in Adobe Acrobat Reader.');
               }
             } catch (prepareError) {
+              console.error('Prepare preview error:', prepareError);
               setError('XFA form requires flattening. Please upload a flattened preview PDF or open in Adobe Acrobat Reader.');
             }
           } else {
             setFileUrl(data.data.signedUrl);
           }
         } else {
+          console.error('Failed to get signed URL:', data);
           setError(data.message || 'Failed to generate secure PDF streaming token.');
         }
-      } catch {
+      } catch (err) {
+        console.error('API error:', err);
         if (active) setError('Failed to contact backend API server.');
       } finally {
         if (active) setLoading(false);
@@ -88,11 +97,13 @@ export const PdfViewer = ({
   }, [docId, viewType]);
 
   const onDocumentLoadSuccess = ({ numPages }) => {
+    console.log('PDF loaded successfully, numPages:', numPages);
     setNumPages(numPages);
     setPageNumber(1);
   };
 
   const onDocumentLoadError = (error) => {
+    console.error('PDF load error:', error);
     setError(error.message || 'Failed to load PDF');
     setLoading(false);
   };
@@ -109,6 +120,18 @@ export const PdfViewer = ({
         <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md">{error}</p>
         <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
           This PDF may use an unsupported format. Try opening it in Adobe Acrobat Reader.
+        </p>
+      </div>
+    );
+  }
+
+  if (!fileUrl) {
+    return (
+      <div className="flex h-96 w-full flex-col items-center justify-center rounded-2xl border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/5 p-6 text-center">
+        <AlertTriangle className="mb-4 h-12 w-12 text-amber-600 dark:text-amber-500" />
+        <h4 className="mb-2 font-bold text-slate-900 dark:text-white text-base">No PDF URL available</h4>
+        <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md">
+          The PDF URL could not be generated. Please try refreshing the page.
         </p>
       </div>
     );
