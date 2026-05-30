@@ -62,24 +62,10 @@ export const DocumentCard = ({ doc, onView, onAutofill, onMapping, onDelete }) =
           variant="outline"
           onClick={() => onView(doc, 'original')}
           icon={Eye}
-          title={
-            liveCycle
-              ? previewAttached
-                ? 'Preview flattened copy in Adobe Embed'
-                : 'Upload flattened PDF from Acrobat Print-to-PDF first'
-              : isXfaTemplate
-                ? 'XFA — flatten or upload preview PDF'
-                : 'Preview in Adobe Embed'
-          }
+          title="Preview Document"
           className="text-xs border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
         >
-          {liveCycle
-            ? previewAttached
-              ? 'Preview'
-              : 'Preview (needs flat PDF)'
-            : isXfaTemplate
-              ? 'Preview (XFA)'
-              : 'Preview'}
+          Preview
         </Button>
         
         <Button

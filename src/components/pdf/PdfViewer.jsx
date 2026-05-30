@@ -1,23 +1,17 @@
-import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import usePdfViewer from '../../hooks/usePdfViewer';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
 import api from '../../services/api';
 import documentApi from '../../services/document.api';
-import { ADOBE_CONFIG, getAdobeViewSettings } from '../../constants/adobeConfig';
 import { PDF_TYPES } from '../../constants/pdfTypes';
-import {
-  isXfaDocument,
-  getSecureLinkType,
-  getEffectivePdfTypeForViewer,
-  isLiveCycleXfa,
-  isXfaPlaceholderBuffer,
-  hasManualPreview,
-  shouldUseHtmlFormViewer,
-} from '../../utils/pdfPreviewStrategy';
 import PdfLoadingState from './PdfLoadingState';
-import PdfFallback from './PdfFallback';
-import PdfXfaNotice from './PdfXfaNotice';
-import PdfHtmlFormViewer from './PdfHtmlFormViewer';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
+
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).toString();
 
 export const PdfViewer = ({
   docId,
@@ -26,19 +20,14 @@ export const PdfViewer = ({
   pdfType: pdfTypeProp,
   hasXfa: hasXfaProp,
 }) => {
-  const containerRef = useRef(null);
-  const { sdkReady, error: sdkError } = usePdfViewer();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [useFallback, setUseFallback] = useState(false);
   const [fileUrl, setFileUrl] = useState('');
   const [docMeta, setDocMeta] = useState(null);
-  const [forceHtmlMode, setForceHtmlMode] = useState(false);
-  const [xfaPreviewBlocked, setXfaPreviewBlocked] = useState(false);
-  const [usingFlattenedPreview, setUsingFlattenedPreview] = useState(false);
-  const [preparingPreview, setPreparingPreview] = useState(false);
-  const [uploadingPreview, setUploadingPreview] = useState(false);
-  const [linkRefreshKey, setLinkRefreshKey] = useState(0);
+  
+  const [numPages, setNumPages] = useState(null);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [scale, setScale] = useState(1.0);
 
   useEffect(() => {
     let active = true;
@@ -46,74 +35,31 @@ export const PdfViewer = ({
       try {
         const res = await documentApi.getOne(docId);
         if (active && res.data?.success) {
-          const doc = res.data.data;
-          setDocMeta({
-            ...doc,
-            type: pdfTypeProp ?? doc.type,
-            hasXfa: hasXfaProp ?? doc.hasXfa,
-          });
+          setDocMeta(res.data.data);
         }
-      } catch {
-        if (active) {
-          setDocMeta({
-            type: pdfTypeProp || PDF_TYPES.ACROFORM,
-            hasXfa: Boolean(hasXfaProp),
-            fields: [],
-          });
-        }
+      } catch (err) {
+        console.warn('Could not load doc meta', err);
       }
     };
     if (docId) loadMeta();
-    return () => {
-      active = false;
-    };
-  }, [docId, pdfTypeProp, hasXfaProp]);
+    return () => { active = false; };
+  }, [docId]);
 
-  const effectiveDoc = docMeta || {
-    type: pdfTypeProp || PDF_TYPES.ACROFORM,
-    hasXfa: Boolean(hasXfaProp),
-    fields: [],
-  };
-
-  const useHtmlViewer = useMemo(
-    () =>
-      viewType !== 'filled' &&
-      shouldUseHtmlFormViewer(effectiveDoc, { forceHtml: forceHtmlMode }),
-    [viewType, effectiveDoc, forceHtmlMode]
-  );
-
-  const embedPdfType = getEffectivePdfTypeForViewer(effectiveDoc, usingFlattenedPreview);
-
-  // PDF stream + Adobe Embed — skipped entirely for XFA (HTML viewer)
   useEffect(() => {
-    if (!docId || !docMeta || useHtmlViewer) return undefined;
-
+    if (!docId) return undefined;
     let active = true;
+    
     const fetchSignedLink = async () => {
       setLoading(true);
       setError(null);
-      setXfaPreviewBlocked(false);
-      setUsingFlattenedPreview(false);
-
-      const linkType = getSecureLinkType(effectiveDoc, viewType);
-
+      
       try {
-        const response = await api.get(
-          `/api/documents/${docId}/secure-link?type=${linkType}`
-        );
+        const response = await api.get(`/api/documents/${docId}/secure-link?type=${viewType}`);
         const data = response.data;
-
         if (!active) return;
 
         if (data.success && data.data.signedUrl) {
-          const previewReady = data.data.previewReady !== false;
-          if (linkType === 'preview' && !previewReady) {
-            setXfaPreviewBlocked(true);
-            setFileUrl(data.data.signedUrl);
-          } else {
-            setUsingFlattenedPreview(linkType === 'preview');
-            setFileUrl(data.data.signedUrl);
-          }
+          setFileUrl(data.data.signedUrl);
         } else {
           setError(data.message || 'Failed to generate secure PDF streaming token.');
         }
@@ -125,179 +71,19 @@ export const PdfViewer = ({
     };
 
     fetchSignedLink();
-    return () => {
-      active = false;
-    };
-  }, [docId, viewType, docMeta, useHtmlViewer, effectiveDoc, linkRefreshKey]);
+    return () => { active = false; };
+  }, [docId, viewType]);
 
-  useEffect(() => {
-    if (useHtmlViewer || xfaPreviewBlocked || !sdkReady || !fileUrl || loading || error || useFallback) {
-      return undefined;
-    }
+  const onDocumentLoadSuccess = ({ numPages }) => {
+    setNumPages(numPages);
+    setPageNumber(1);
+  };
 
-    let previewFailed = false;
-    const viewDivId = `adobe-pdf-view-${docId}-${viewType}`;
-
-    const renderAdobeView = async () => {
-      try {
-        const res = await fetch(fileUrl);
-        if (res.status === 503) {
-          setForceHtmlMode(true);
-          return;
-        }
-        if (!res.ok) throw new Error('Physical PDF content streaming failed.');
-        const buffer = await res.arrayBuffer();
-
-        if (isXfaPlaceholderBuffer(buffer)) {
-          setForceHtmlMode(true);
-          return;
-        }
-
-        if (!window.AdobeDC) {
-          throw new Error('Adobe PDF View SDK missing.');
-        }
-
-        const adobeDCView = new window.AdobeDC.View({
-          clientId: ADOBE_CONFIG.CLIENT_ID,
-          divId: viewDivId,
-        });
-
-        adobeDCView.registerCallback(
-          window.AdobeDC.View.Enum.CallbackType.EVENT_LISTENER,
-          (event) => {
-            if (
-              event.type === 'DOCUMENT_OPEN_FAILED' ||
-              event.type === 'APP_RENDERING_FAILED'
-            ) {
-              if (!previewFailed) {
-                previewFailed = true;
-                if (isXfaDocument(effectiveDoc)) {
-                  setForceHtmlMode(true);
-                } else {
-                  setUseFallback(true);
-                }
-              }
-            }
-          },
-          {}
-        );
-
-        await adobeDCView.previewFile(
-          {
-            content: { promise: Promise.resolve(buffer) },
-            metaData: { fileName },
-          },
-          getAdobeViewSettings(embedPdfType)
-        );
-      } catch (err) {
-        console.error('Adobe Embed API error:', err);
-        if (isXfaDocument(effectiveDoc)) {
-          setForceHtmlMode(true);
-        } else {
-          setUseFallback(true);
-        }
-      }
-    };
-
-    renderAdobeView();
-    return undefined;
-  }, [
-    useHtmlViewer,
-    xfaPreviewBlocked,
-    sdkReady,
-    fileUrl,
-    loading,
-    error,
-    docId,
-    viewType,
-    fileName,
-    embedPdfType,
-    useFallback,
-    effectiveDoc,
-  ]);
-
-  const handleUploadPreview = useCallback(
-    async (file) => {
-      setUploadingPreview(true);
-      setError(null);
-      try {
-        const res = await documentApi.uploadPreviewPdf(docId, file);
-        if (res.data?.success) {
-          setDocMeta(res.data.data);
-          setXfaPreviewBlocked(false);
-          setLinkRefreshKey((k) => k + 1);
-        } else {
-          setError(res.data?.message || 'Upload failed.');
-        }
-      } catch (err) {
-        setError(
-          err.response?.data?.message ||
-            'Invalid preview file. Use Print → Save as PDF from Acrobat Reader after the form fully loads.'
-        );
-      } finally {
-        setUploadingPreview(false);
-      }
-    },
-    [docId]
-  );
-
-  const handlePreparePreview = useCallback(async () => {
-    setPreparingPreview(true);
-    setError(null);
-    try {
-      const res = await documentApi.preparePreview(docId);
-      if (res.data?.success) {
-        setXfaPreviewBlocked(false);
-        const linkRes = await api.get(`/api/documents/${docId}/secure-link?type=preview`);
-        if (linkRes.data?.success && linkRes.data.data.signedUrl) {
-          setUsingFlattenedPreview(true);
-          setFileUrl(linkRes.data.data.signedUrl);
-          setUseFallback(false);
-        }
-      } else {
-        setError(res.data?.message || 'Could not prepare preview.');
-      }
-    } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          'Server could not flatten this XFA PDF.'
-      );
-    } finally {
-      setPreparingPreview(false);
-    }
-  }, [docId]);
-
-  const handleReanalyze = useCallback(async () => {
-    try {
-      const res = await documentApi.reanalyze(docId);
-      if (res.data?.success) {
-        setDocMeta(res.data.data);
-        setForceHtmlMode(true);
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Re-analyze failed.');
-    }
-  }, [docId]);
-
-  if (loading && !useHtmlViewer) {
+  if (loading || (docId && !docMeta)) {
     return <PdfLoadingState />;
   }
 
-  if (docId && !docMeta) {
-    return <PdfLoadingState />;
-  }
-
-  if (useHtmlViewer) {
-    return (
-      <PdfHtmlFormViewer
-        docId={docId}
-        pdfTitle={effectiveDoc.pdfTitle || fileName}
-        onReanalyze={handleReanalyze}
-      />
-    );
-  }
-
-  if (error && !xfaPreviewBlocked) {
+  if (error) {
     return (
       <div className="flex h-96 w-full flex-col items-center justify-center rounded-2xl border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/5 p-6 text-center">
         <AlertTriangle className="mb-4 h-12 w-12 text-red-600 dark:text-red-500" />
@@ -307,51 +93,76 @@ export const PdfViewer = ({
     );
   }
 
-  if (xfaPreviewBlocked) {
-    return (
-      <PdfXfaNotice
-        url={fileUrl}
-        fileName={fileName}
-        pdfTitle={effectiveDoc.pdfTitle}
-        liveCycleXfa={isLiveCycleXfa(effectiveDoc)}
-        hasManualPreview={hasManualPreview(effectiveDoc)}
-        onPreparePreview={isLiveCycleXfa(effectiveDoc) ? undefined : handlePreparePreview}
-        onUploadPreview={handleUploadPreview}
-        onReanalyze={handleReanalyze}
-        preparing={preparingPreview}
-        uploading={uploadingPreview}
-        prepareError={error}
-      />
-    );
-  }
-
-  if (useFallback || sdkError) {
-    if (isXfaDocument(effectiveDoc)) {
-      return (
-        <PdfHtmlFormViewer
-          docId={docId}
-          pdfTitle={effectiveDoc.pdfTitle || fileName}
-          onReanalyze={handleReanalyze}
-        />
-      );
-    }
-    return (
-      <div className="space-y-3">
-        <PdfFallback url={fileUrl} />
-      </div>
-    );
-  }
-
-  const viewDivId = `adobe-pdf-view-${docId}-${viewType}`;
-
   return (
-    <div className="relative w-full h-[calc(100vh-12rem)] min-h-[500px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-2xl overflow-hidden shadow-lg dark:shadow-2xl">
-      {usingFlattenedPreview && (
-        <p className="absolute top-0 left-0 right-0 z-10 border-b border-emerald-500/20 bg-emerald-500/10 px-4 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
-          Showing server-flattened preview (Adobe Embed)
-        </p>
-      )}
-      <div id={viewDivId} className="w-full h-full" ref={containerRef} />
+    <div className="relative w-full h-[calc(100vh-12rem)] min-h-[500px] flex flex-col border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 rounded-2xl overflow-hidden shadow-lg dark:shadow-2xl">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between px-4 py-2 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 shrink-0">
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setPageNumber(p => Math.max(1, p - 1))}
+            disabled={pageNumber <= 1}
+            className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
+          >
+            <ChevronLeft className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+          </button>
+          <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
+            Page {pageNumber} of {numPages || '--'}
+          </span>
+          <button 
+            onClick={() => setPageNumber(p => Math.min(numPages || p, p + 1))}
+            disabled={pageNumber >= (numPages || 1)}
+            className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
+          >
+            <ChevronRight className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+          </button>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setScale(s => Math.max(0.5, s - 0.25))}
+            className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
+            <ZoomOut className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+          </button>
+          <span className="text-sm font-medium text-slate-600 dark:text-slate-300 w-12 text-center">
+            {Math.round(scale * 100)}%
+          </span>
+          <button 
+            onClick={() => setScale(s => Math.min(3, s + 0.25))}
+            className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
+            <ZoomIn className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+          </button>
+        </div>
+      </div>
+
+      {/* Document Viewport */}
+      <div className="flex-1 overflow-auto bg-slate-100 dark:bg-slate-900 p-4 flex justify-center custom-scrollbar">
+        {fileUrl && (
+          <Document
+            file={fileUrl}
+            onLoadSuccess={onDocumentLoadSuccess}
+            loading={<PdfLoadingState />}
+            error={
+              <div className="text-red-500 bg-red-50 p-4 rounded-lg">
+                Failed to load PDF using react-pdf.
+              </div>
+            }
+            options={{
+              cMapUrl: 'https://unpkg.com/pdfjs-dist@4.4.162/cmaps/',
+              cMapPacked: true,
+            }}
+          >
+            <Page 
+              pageNumber={pageNumber} 
+              scale={scale} 
+              renderTextLayer={true}
+              renderAnnotationLayer={true}
+              renderInteractiveForms={true}
+            />
+          </Document>
+        )}
+      </div>
     </div>
   );
 };
