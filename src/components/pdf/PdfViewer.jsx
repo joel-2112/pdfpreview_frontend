@@ -55,7 +55,24 @@ export const PdfViewer = ({
         if (!active) return;
 
         if (data.success && data.data.signedUrl) {
-          setFileUrl(data.data.signedUrl);
+          // Check if XFA preview needs flattening
+          if (viewType === 'preview' && data.data.needsXfaPreview && !data.data.previewReady) {
+            // Try to prepare preview automatically
+            try {
+              await api.post(`/api/documents/${docId}/prepare-preview`);
+              // Refetch the secure link after preparing
+              const retryResponse = await api.get(`/api/documents/${docId}/secure-link?type=${viewType}`);
+              if (retryResponse.data?.success && retryResponse.data.data.signedUrl) {
+                setFileUrl(retryResponse.data.data.signedUrl);
+              } else {
+                setError('XFA form requires flattening. Please upload a flattened preview PDF or open in Adobe Acrobat Reader.');
+              }
+            } catch (prepareError) {
+              setError('XFA form requires flattening. Please upload a flattened preview PDF or open in Adobe Acrobat Reader.');
+            }
+          } else {
+            setFileUrl(data.data.signedUrl);
+          }
         } else {
           setError(data.message || 'Failed to generate secure PDF streaming token.');
         }
