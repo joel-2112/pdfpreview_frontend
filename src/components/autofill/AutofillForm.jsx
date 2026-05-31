@@ -4,6 +4,7 @@ import api from '../../services/api';
 import { User, Mail, Calendar, Phone, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import Button from '../shared/Button';
 import ErrorMessage from '../shared/ErrorMessage';
+import { API_ROUTES } from '../../constants/apiRoutes';
 
 const DEFAULT_PROFILE_FIELDS = [
   { key: 'firstName', label: 'First Name', type: 'text', icon: User, placeholder: 'John' },
@@ -44,7 +45,7 @@ export const AutofillForm = () => {
     setSuccess(false);
 
     try {
-      const res = await api.put('/api/auth/profile', { profileData: formData });
+      const res = await api.put(API_ROUTES.AUTH.UPDATE_PROFILE, { profileData: formData });
       if (res.data.success) {
         updateProfileData(formData);
         setSuccess(true);

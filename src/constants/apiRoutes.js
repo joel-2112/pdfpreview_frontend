@@ -2,7 +2,8 @@ export const API_ROUTES = {
   AUTH: {
     REGISTER: '/api/auth/register',
     LOGIN: '/api/auth/login',
-    ME: '/api/auth/me'
+    ME: '/api/auth/me',
+    UPDATE_PROFILE: 'api/auth/profile'
   },
   DOCUMENTS: {
     UPLOAD: '/api/documents/upload',
