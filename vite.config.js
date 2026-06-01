@@ -9,12 +9,11 @@ export default defineConfig({
       'localhost',
       'https://pdfpreview-adobe.vercel.app'
     ],
-    // proxy: {
-    //   '/api': {
-    //     target: 'https://fool-mulch-unroll.ngrok-free.dev/',
-    //     changeOrigin: true,
-    //     secure: false,
-    //   }
-    // }
+    proxy: {
+    '/formvu-outputs': {
+      target: 'http://localhost:5000',
+      changeOrigin: true,
+    }
+  }
   }
 });
