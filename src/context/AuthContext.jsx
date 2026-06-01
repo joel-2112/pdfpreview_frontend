@@ -11,27 +11,24 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    let mounted = true;
     const fetchUser = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setLoading(false);
-        return;
-      }
       try {
         const res = await api.get(API_ROUTES.AUTH.ME);
-        if (res.data.success) {
+        if (mounted && res.data.success) {
           setUser(res.data.data);
-        } else {
-          localStorage.removeItem('token');
+        } else if (mounted) {
+          setUser(null);
         }
       } catch (err) {
         console.error('Failed to authenticate session:', err);
-        localStorage.removeItem('token');
+        if (mounted) setUser(null);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
     fetchUser();
+    return () => { mounted = false; };
   }, []);
 
   const login = async (email, password) => {
@@ -40,7 +37,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await api.post(API_ROUTES.AUTH.LOGIN, { email, password });
       if (res.data.success) {
-        localStorage.setItem('token', res.data.data.token);
+        // No token to store – cookie is set automatically by backend
         setUser(res.data.data.user);
         return true;
       }
@@ -60,7 +57,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await api.post(API_ROUTES.AUTH.REGISTER, { name, email, password });
       if (res.data.success) {
-        localStorage.setItem('token', res.data.data.token);
+        // No token to store – cookie is set automatically by backend
         setUser(res.data.data.user);
         return true;
       }
@@ -74,9 +71,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    setUser(null);
+  const logout = async () => {
+    try {
+      await api.post(API_ROUTES.AUTH.LOGOUT);
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      setUser(null);
+    }
   };
 
   const updateProfileData = (updatedProfileData) => {
