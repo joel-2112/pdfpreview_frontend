@@ -7,14 +7,18 @@ import ErrorMessage from '../shared/ErrorMessage';
 import { API_ROUTES } from '../../constants/apiRoutes';
 
 const DEFAULT_PROFILE_FIELDS = [
-  { key: 'firstName', label: 'First Name', type: 'text', icon: User, placeholder: 'Alex' },
-  { key: 'lastName', label: 'Last Name', type: 'text', icon: User, placeholder: 'Morgan' },
+  { key: 'firstName', label: 'First Name / Given Name', type: 'text', icon: User, placeholder: 'Alex' },
+  { key: 'lastName', label: 'Last Name / Family Name', type: 'text', icon: User, placeholder: 'Morgan' },
   { key: 'email', label: 'Email Address', type: 'email', icon: Mail, placeholder: 'alex.morgan@company.com' },
   { key: 'phone', label: 'Phone Number', type: 'tel', icon: Phone, placeholder: '+1 (555) 234-5678' },
   { key: 'dob', label: 'Date of Birth', type: 'date', icon: Calendar, placeholder: '' },
+  { key: 'gender', label: 'Sex / Gender', type: 'text', icon: User, placeholder: 'Male / Female' },
   { key: 'passportNumber', label: 'Passport / ID Number', type: 'text', icon: ShieldAlert, placeholder: 'P12345678' },
+  { key: 'birthCity', label: 'Place of Birth: City / Town', type: 'text', icon: MapPin, placeholder: 'Toronto' },
+  { key: 'nationality', label: 'Country of Citizenship / Nationality', type: 'text', icon: Globe, placeholder: 'Canada' },
   { key: 'address', label: 'Street Address', type: 'text', icon: MapPin, placeholder: '742 Evergreen Terrace' },
-  { key: 'nationality', label: 'Nationality / Region', type: 'text', icon: Globe, placeholder: 'United States' },
+  { key: 'maritalStatus', label: 'Marital Status', type: 'text', icon: User, placeholder: 'Single / Married' },
+  { key: 'uciId', label: 'UCI / Client Identifier Number', type: 'text', icon: ShieldAlert, placeholder: '12345678' },
 ];
 
 export const AutofillForm = () => {
