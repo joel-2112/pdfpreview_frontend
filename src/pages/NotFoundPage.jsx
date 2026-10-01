@@ -1,22 +1,31 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { AlertCircle, ArrowLeft } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Home, Compass } from 'lucide-react';
 import Button from '../components/shared/Button';
 
 export const NotFoundPage = () => {
   return (
-    <div className="flex min-h-[calc(100vh-8rem)] flex-col items-center justify-center text-center p-6 space-y-4 animate-fade-in">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white dark:bg-slate-900 border border-slate-800 text-slate-500 shadow-2xl mb-4">
-        <AlertCircle className="h-8 w-8" />
+    <div className="relative flex min-h-[calc(100vh-10rem)] flex-col items-center justify-center text-center p-6 space-y-5 animate-fade-in">
+      <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20 shadow-xl mb-2 animate-float">
+        <Compass className="h-10 w-10" />
       </div>
-      <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">404 - Page Not Found</h3>
-      <p className="text-sm text-slate-400 max-w-sm leading-relaxed">
-        The link you followed may be broken, or the layout page has been renamed.
-      </p>
-      <div className="pt-6">
+
+      <div className="space-y-2 max-w-md">
+        <span className="text-xs font-mono font-bold uppercase tracking-wider text-brand-600 dark:text-brand-400 bg-brand-500/10 px-3 py-1 rounded-full border border-brand-500/20">
+          Error 404
+        </span>
+        <h2 className="text-3xl sm:text-4xl font-display font-black text-slate-900 dark:text-white tracking-tight">
+          Page Not Found
+        </h2>
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+          The view or endpoint you requested cannot be located. It may have been moved, deleted, or you might have entered an invalid URL.
+        </p>
+      </div>
+
+      <div className="pt-4 flex items-center space-x-3">
         <Link to="/" className="no-underline">
-          <Button variant="outline" icon={ArrowLeft}>
-            Back to Dashboard
+          <Button variant="primary" icon={Home}>
+            Return to Dashboard
           </Button>
         </Link>
       </div>
@@ -25,3 +34,4 @@ export const NotFoundPage = () => {
 };
 
 export default NotFoundPage;
+

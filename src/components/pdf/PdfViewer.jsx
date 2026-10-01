@@ -154,31 +154,39 @@ export const PdfViewer = ({
   // --- XFA Choice UI ---
   if (isXfaDocument && !xfaPreviewMode) {
     return (
-      <div className="flex h-96 w-full flex-col items-center justify-center rounded-2xl border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/5 p-6 text-center">
-        <AlertTriangle className="mb-4 h-12 w-12 text-amber-600 dark:text-amber-500" />
-        <h4 className="mb-2 font-bold text-slate-900 dark:text-white text-base">XFA Form Detected</h4>
-        <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md mb-4">
-          This document uses the XFA format, which cannot be previewed directly in browsers.  
-          You have two options:
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            onClick={() => setXfaPreviewMode('formvu')}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
-          >
-            <Eye className="w-4 h-4" />
-            Preview with FormVu (Beta, watermarked)
-          </button>
-          <button
-            onClick={() => setXfaPreviewMode('download')}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-sm font-medium"
-          >
-            <Download className="w-4 h-4" />
-            Download original XFA PDF
-          </button>
+      <div className="glass-panel flex min-h-[420px] w-full flex-col items-center justify-center rounded-3xl border border-amber-300 dark:border-amber-500/30 bg-amber-50/50 dark:bg-amber-500/5 p-8 text-center space-y-4">
+        <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 animate-float">
+          <AlertTriangle className="h-8 w-8" />
         </div>
-        <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
-          Note: FormVu preview uses a cloud service and may have a watermark. For official submissions, use Adobe Acrobat Reader.
+        <div className="space-y-1 max-w-md">
+          <h4 className="font-display font-bold text-slate-900 dark:text-white text-lg">
+            Dynamic XFA Architecture Detected
+          </h4>
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+            This document utilizes Adobe XML Forms Architecture (XFA). Standard browser PDF viewers cannot parse active scripts directly.
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+          <Button
+            onClick={() => setXfaPreviewMode('formvu')}
+            variant="primary"
+            size="md"
+            icon={Eye}
+          >
+            Preview via FormVu Cloud Engine
+          </Button>
+          <Button
+            onClick={() => setXfaPreviewMode('download')}
+            variant="outline"
+            size="md"
+            icon={Download}
+          >
+            Download Raw XFA File
+          </Button>
+        </div>
+        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+          For official enterprise signing and submissions, use Adobe Acrobat Reader.
         </p>
       </div>
     );
@@ -187,19 +195,26 @@ export const PdfViewer = ({
   // --- XFA Download mode (no preview) ---
   if (isXfaDocument && xfaPreviewMode === 'download') {
     return (
-      <div className="flex h-96 w-full flex-col items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/20 p-6 text-center">
-        <Download className="mb-4 h-12 w-12 text-slate-600 dark:text-slate-400" />
-        <h4 className="mb-2 font-bold text-slate-900 dark:text-white text-base">Download XFA Form</h4>
-        <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md mb-4">
-          This form must be opened with Adobe Acrobat Reader (desktop) to fill and submit.
-        </p>
+      <div className="glass-panel flex min-h-[400px] w-full flex-col items-center justify-center rounded-3xl border border-slate-200/90 dark:border-white/[0.08] p-8 text-center space-y-4">
+        <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-brand-500/10 text-brand-600 dark:text-brand-400">
+          <Download className="h-8 w-8" />
+        </div>
+        <div className="space-y-1 max-w-md">
+          <h4 className="font-display font-bold text-slate-900 dark:text-white text-lg">
+            Download Adobe XFA Template
+          </h4>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+            This template is ready for local filling inside the Adobe Acrobat Reader desktop application.
+          </p>
+        </div>
         <a
           href={fileUrl || `#`}
           download={fileName}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-sm font-medium"
+          className="inline-block"
         >
-          <Download className="w-4 h-4" />
-          Download PDF
+          <Button variant="primary" size="md" icon={Download}>
+            Download PDF Now
+          </Button>
         </a>
       </div>
     );
@@ -210,38 +225,39 @@ export const PdfViewer = ({
     if (loading) return <PdfLoadingState />;
     if (error) {
       return (
-        <div className="flex h-96 w-full flex-col items-center justify-center rounded-2xl border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/5 p-6 text-center">
-          <AlertTriangle className="mb-4 h-12 w-12 text-red-600 dark:text-red-500" />
-          <h4 className="mb-2 font-bold text-slate-900 dark:text-white text-base">FormVu Preview Failed</h4>
-          <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md">{error}</p>
-          <button
+        <div className="glass-panel flex min-h-[400px] w-full flex-col items-center justify-center rounded-3xl border border-rose-200 dark:border-rose-500/30 bg-rose-50/50 dark:bg-rose-500/5 p-8 text-center space-y-3">
+          <AlertTriangle className="h-10 w-10 text-rose-600 dark:text-rose-400" />
+          <h4 className="font-display font-bold text-slate-900 dark:text-white text-base">
+            FormVu Preview Unavailable
+          </h4>
+          <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md">{error}</p>
+          <Button
             onClick={() => setXfaPreviewMode(null)}
-            className="mt-4 text-sm text-blue-600 hover:underline"
+            variant="outline"
+            size="sm"
           >
-            ← Go back
-          </button>
+            ← Return to options
+          </Button>
         </div>
       );
     }
     if (!formvuHtmlUrl) return <PdfLoadingState />;
     return (
-      <div className="relative w-full h-[calc(100vh-12rem)] min-h-[500px] flex flex-col border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-lg">
-        <div className="flex items-center justify-between px-4 py-2 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 shrink-0">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setXfaPreviewMode(null)}
-              className="text-sm text-blue-600 hover:underline"
-            >
-              ← Back to options
-            </button>
-          </div>
-          <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
-            FormVu Preview (Beta – watermarked)
+      <div className="relative w-full h-[calc(100vh-14rem)] min-h-[520px] flex flex-col border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-[#0c1222] rounded-3xl overflow-hidden shadow-xl">
+        <div className="flex items-center justify-between px-5 py-3 bg-slate-50/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-white/[0.08] shrink-0">
+          <button
+            onClick={() => setXfaPreviewMode(null)}
+            className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline cursor-pointer"
+          >
+            ← Back to Options
+          </button>
+          <span className="text-xs font-mono font-semibold text-slate-600 dark:text-slate-400">
+            FormVu Dynamic XFA Stream
           </span>
         </div>
         <iframe
           src={formvuHtmlUrl}
-          className="flex-1 w-full border-0"
+          className="flex-1 w-full border-0 bg-white"
           title="XFA Form Preview"
           sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals"
         />
@@ -256,97 +272,115 @@ export const PdfViewer = ({
 
   if (error) {
     return (
-      <div className="flex h-96 w-full flex-col items-center justify-center rounded-2xl border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/5 p-6 text-center">
-        <AlertTriangle className="mb-4 h-12 w-12 text-red-600 dark:text-red-500" />
-        <h4 className="mb-2 font-bold text-slate-900 dark:text-white text-base">Failed to load PDF</h4>
-        <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md">{error}</p>
-        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-          This PDF may use an unsupported format. Try opening it in Adobe Acrobat Reader.
-        </p>
+      <div className="glass-panel flex min-h-[400px] w-full flex-col items-center justify-center rounded-3xl border border-rose-200 dark:border-rose-500/30 bg-rose-50/50 dark:bg-rose-500/5 p-8 text-center space-y-3">
+        <AlertTriangle className="h-10 w-10 text-rose-600 dark:text-rose-400" />
+        <h4 className="font-display font-bold text-slate-900 dark:text-white text-base">
+          Failed to load PDF Stream
+        </h4>
+        <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md">{error}</p>
       </div>
     );
   }
 
   if (!fileUrl) {
     return (
-      <div className="flex h-96 w-full flex-col items-center justify-center rounded-2xl border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/5 p-6 text-center">
-        <AlertTriangle className="mb-4 h-12 w-12 text-amber-600 dark:text-amber-500" />
-        <h4 className="mb-2 font-bold text-slate-900 dark:text-white text-base">No PDF URL available</h4>
-        <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md">
-          The PDF URL could not be generated. Please try refreshing the page.
+      <div className="glass-panel flex min-h-[400px] w-full flex-col items-center justify-center rounded-3xl border border-amber-200 dark:border-amber-500/30 bg-amber-50/50 dark:bg-amber-500/5 p-8 text-center space-y-3">
+        <AlertTriangle className="h-10 w-10 text-amber-600 dark:text-amber-400" />
+        <h4 className="font-display font-bold text-slate-900 dark:text-white text-base">
+          PDF Token Expired or Unavailable
+        </h4>
+        <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md">
+          The PDF stream URL could not be generated. Please try reloading the view.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="relative w-full h-[calc(100vh-12rem)] min-h-[500px] flex flex-col border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 rounded-2xl overflow-hidden shadow-lg dark:shadow-2xl">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 shrink-0">
-        <div className="flex items-center gap-2">
+    <div className="relative w-full h-[calc(100vh-14rem)] min-h-[540px] flex flex-col border border-slate-200/90 dark:border-white/[0.08] bg-slate-100/80 dark:bg-[#070c18] rounded-3xl overflow-hidden shadow-xl">
+      {/* Precision PDF Toolbar */}
+      <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 bg-white/90 dark:bg-[#0c1222]/90 backdrop-blur-md border-b border-slate-200/80 dark:border-white/[0.08] shrink-0 z-10">
+        
+        {/* Page navigation */}
+        <div className="flex items-center space-x-1 sm:space-x-2">
           <button 
             onClick={() => setPageNumber(p => Math.max(1, p - 1))}
             disabled={pageNumber <= 1}
-            className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
+            className="p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 cursor-pointer transition-colors"
+            title="Previous Page"
+            aria-label="Previous Page"
           >
-            <ChevronLeft className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+            <ChevronLeft className="w-4 h-4" />
           </button>
-          <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
-            Page {pageNumber} of {numPages || '--'}
-          </span>
+          
+          <div className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-mono font-semibold text-slate-700 dark:text-slate-300">
+            Page {pageNumber} / {numPages || '--'}
+          </div>
+
           <button 
             onClick={() => setPageNumber(p => Math.min(numPages || p, p + 1))}
             disabled={pageNumber >= (numPages || 1)}
-            className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
+            className="p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 cursor-pointer transition-colors"
+            title="Next Page"
+            aria-label="Next Page"
           >
-            <ChevronRight className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
-        
-        <div className="flex items-center gap-2">
+
+        {/* Zoom & Fit controls */}
+        <div className="flex items-center space-x-1 sm:space-x-2">
           <button 
             onClick={() => setScale(s => Math.max(0.5, s - 0.25))}
-            className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+            title="Zoom Out"
+            aria-label="Zoom Out"
           >
-            <ZoomOut className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+            <ZoomOut className="w-4 h-4" />
           </button>
-          <span className="text-sm font-medium text-slate-600 dark:text-slate-300 w-12 text-center">
+          
+          <span className="text-xs font-mono font-semibold text-slate-700 dark:text-slate-300 w-12 text-center">
             {Math.round(scale * 100)}%
           </span>
+
           <button 
-            onClick={() => setScale(s => Math.min(3, s + 0.25))}
-            className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800"
+            onClick={() => setScale(s => Math.min(2.5, s + 0.25))}
+            className="p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+            title="Zoom In"
+            aria-label="Zoom In"
           >
-            <ZoomIn className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+            <ZoomIn className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* Document Viewport */}
-      <div className="flex-1 overflow-auto bg-slate-100 dark:bg-slate-900 p-4 flex justify-center custom-scrollbar">
+      {/* Document Viewport Canvas */}
+      <div className="flex-1 overflow-auto bg-slate-200/50 dark:bg-[#070c18] p-4 sm:p-8 flex justify-center custom-scrollbar">
         {fileUrl && (
-          <Document
-            key={fileUrl}
-            file={fileUrl}
-            onLoadSuccess={onDocumentLoadSuccess}
-            onLoadError={onDocumentLoadError}
-            loading={<PdfLoadingState />}
-            error={
-              <div className="text-red-500 bg-red-50 p-4 rounded-lg">
-                Failed to load PDF using react-pdf.
-              </div>
-            }
-            options={pdfOptions}
-          >
-            <Page 
-              pageNumber={pageNumber} 
-              scale={scale} 
-              renderTextLayer={true}
-              renderAnnotationLayer={true}
-              renderInteractiveForms={true}
-              renderStructTree={false} 
-            />
-          </Document>
+          <div className="shadow-2xl rounded-sm overflow-hidden ring-1 ring-slate-900/10 dark:ring-white/10 bg-white inline-block my-auto">
+            <Document
+              key={fileUrl}
+              file={fileUrl}
+              onLoadSuccess={onDocumentLoadSuccess}
+              onLoadError={onDocumentLoadError}
+              loading={<PdfLoadingState />}
+              error={
+                <div className="text-rose-600 bg-rose-50 p-6 rounded-2xl text-xs font-semibold">
+                  Failed to load PDF using react-pdf rendering pipeline.
+                </div>
+              }
+              options={pdfOptions}
+            >
+              <Page 
+                pageNumber={pageNumber} 
+                scale={scale} 
+                renderTextLayer={true}
+                renderAnnotationLayer={true}
+                renderInteractiveForms={true}
+                renderStructTree={false} 
+              />
+            </Document>
+          </div>
         )}
       </div>
     </div>

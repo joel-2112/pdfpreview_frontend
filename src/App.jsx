@@ -16,11 +16,11 @@ import NotFoundPage from './pages/NotFoundPage';
 
 function AppLayout() {
   return (
-    <div className="flex min-h-screen flex-col bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100 antialiased">
+    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900 dark:bg-[#070b14] dark:text-slate-100 transition-colors duration-200">
       <Navbar />
-      <div className="flex flex-1 flex-col md:flex-row">
+      <div className="flex flex-1 flex-col md:flex-row w-full">
         <Sidebar />
-        <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full overflow-hidden">
+        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full min-w-0">
           <Routes>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/documents" element={<DocumentsPage />} />
@@ -40,10 +40,10 @@ export default function App() {
       <AuthProvider>
         <PdfProvider>
           <Router>
-            <Routes>
+            <Routes>  
               {/* Public route */}
               <Route path="/login" element={<LoginPage />} />
-              
+
               {/* Protected app routes */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/*" element={<AppLayout />} />

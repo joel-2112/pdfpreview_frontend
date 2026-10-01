@@ -11,14 +11,17 @@ export const PdfModal = ({
   pdfType,
   hasXfa,
 }) => {
+  const isFilled = viewType === 'filled';
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`PDF Previewer — Adobe Embed · ${viewType === 'filled' ? 'Autofilled' : 'Template'}`}
-      size="xl"
+      title={fileName || 'PDF Document Viewer'}
+      subtitle={`${isFilled ? 'Autofilled Output Stream' : 'Raw Document Template'} • ${pdfType || 'AcroForm'}`}
+      size="full"
     >
-      <div className="w-full">
+      <div className="w-full h-full">
         {isOpen && docId && (
           <PdfViewer
             docId={docId}
@@ -34,3 +37,4 @@ export const PdfModal = ({
 };
 
 export default PdfModal;
+
