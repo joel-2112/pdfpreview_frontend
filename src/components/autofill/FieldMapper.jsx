@@ -121,7 +121,6 @@ export const FieldMapper = ({ docId, fields }) => {
 
       {autoMatchedCount > 0 && (
         <div className="flex items-center space-x-3 rounded-2xl border border-indigo-200 dark:border-indigo-500/30 bg-indigo-50 dark:bg-indigo-500/10 p-3 text-xs text-indigo-800 dark:text-indigo-300 font-semibold animate-fade-in">
-          <Sparkles className="h-4 w-4 shrink-0 text-brand-600 dark:text-brand-400" />
           <span>Auto-suggest matched {autoMatchedCount} fields based on dictionary keys!</span>
         </div>
       )}

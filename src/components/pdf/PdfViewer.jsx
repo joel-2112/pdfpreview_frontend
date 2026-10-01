@@ -40,18 +40,16 @@ const XfaPageLayer = ({ page, scale, rotate }) => {
       try {
         if (typeof page.getXfa === 'function') {
           const xfa = await page.getXfa();
-          if (xfa && xfa.html && containerRef.current && !cancelled) {
+          const xfaHtml = xfa?.html || xfa;
+          if (xfaHtml && (xfaHtml.name || xfaHtml.children) && containerRef.current && !cancelled) {
             containerRef.current.innerHTML = '';
             const viewport = page.getViewport({ scale: scale || 1, rotation: rotate || 0 });
-
-            containerRef.current.style.width = `${Math.floor(viewport.width)}px`;
-            containerRef.current.style.height = `${Math.floor(viewport.height)}px`;
 
             if (pdfjs.XfaLayer) {
               pdfjs.XfaLayer.render({
                 viewport,
                 div: containerRef.current,
-                xfaHtml: xfa.html,
+                xfaHtml,
                 linkService: {
                   addLinkAttributes: (element, url, newWindow) => {
                     element.href = url;
@@ -237,7 +235,6 @@ export const PdfViewer = ({
 
           {isXfaActive && (
             <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 dark:bg-amber-400/10 border border-amber-500/20 text-[11px] font-semibold text-amber-700 dark:text-amber-300">
-              <Sparkles className="w-3 h-3 text-amber-500" />
               <span>Dynamic XFA Active</span>
             </div>
           )}

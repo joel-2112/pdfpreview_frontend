@@ -142,7 +142,6 @@ export const AutofillPage = () => {
               disabled={!selectedDocId || isXfaDoc}
               variant="gradient"
               className="w-full py-3"
-              icon={Sparkles}
             >
               {isXfaDoc ? 'Autofill Blocked for Dynamic XFA' : 'Inject Profile & Preview'}
             </Button>
