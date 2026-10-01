@@ -6,6 +6,7 @@ import 'pdfjs-dist/web/pdf_viewer.css';
 import api from '../../services/api';
 import documentApi from '../../services/document.api';
 import PdfLoadingState from './PdfLoadingState';
+import AdobePdfViewer from './AdobePdfViewer';
 import { 
   AlertTriangle, 
   ChevronLeft, 
@@ -13,12 +14,11 @@ import {
   ZoomIn, 
   ZoomOut, 
   Download, 
-  FileText, 
   Maximize2, 
   Minimize2, 
   RefreshCw,
-  Layers,
-  Sparkles
+  Sparkles,
+  Layers
 } from 'lucide-react';
 import Button from '../shared/Button';
 
@@ -27,7 +27,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 
 /**
  * Custom XFA Layer Renderer Component
- * Renders Mozilla PDF.js dynamic XFA XML DOM elements onto the PDF page viewport
+ * Renders Mozilla PDF.js dynamic XFA XML DOM elements with proper orientation (dontFlip: true)
  */
 const XfaPageLayer = ({ page, scale, rotate }) => {
   const containerRef = useRef(null);
@@ -43,7 +43,12 @@ const XfaPageLayer = ({ page, scale, rotate }) => {
           const xfaHtml = xfa?.html || xfa;
           if (xfaHtml && (xfaHtml.name || xfaHtml.children) && containerRef.current && !cancelled) {
             containerRef.current.innerHTML = '';
-            const viewport = page.getViewport({ scale: scale || 1, rotation: rotate || 0 });
+            
+            // Pass dontFlip: true so the HTML layer renders in standard top-down orientation
+            const viewport = page.getViewport({ scale: scale || 1, rotation: rotate || 0, dontFlip: true });
+
+            containerRef.current.style.width = `${Math.floor(viewport.width)}px`;
+            containerRef.current.style.height = `${Math.floor(viewport.height)}px`;
 
             if (pdfjs.XfaLayer) {
               pdfjs.XfaLayer.render({
@@ -84,9 +89,8 @@ const XfaPageLayer = ({ page, scale, rotate }) => {
         position: 'absolute',
         top: 0,
         left: 0,
-        right: 0,
-        bottom: 0,
         pointerEvents: 'auto',
+        zIndex: 2,
       }}
     />
   );
@@ -109,6 +113,7 @@ export const PdfViewer = ({
   const [scale, setScale] = useState(1.0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isXfaActive, setIsXfaActive] = useState(false);
+  const [viewerEngine, setViewerEngine] = useState('precision'); // 'precision' or 'adobe'
 
   // Memoize pdf.js options with full XFA and font rendering capabilities enabled
   const pdfOptions = useMemo(() => ({
@@ -238,124 +243,172 @@ export const PdfViewer = ({
               <span>Dynamic XFA Active</span>
             </div>
           )}
-        </div>
 
-        {/* Center: Page Navigation */}
-        <div className="flex items-center space-x-1.5 sm:space-x-2">
-          <button 
-            onClick={() => setPageNumber(p => Math.max(1, p - 1))}
-            disabled={pageNumber <= 1}
-            className="p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 cursor-pointer transition-colors"
-            title="Previous Page"
-            aria-label="Previous Page"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          
-          <div className="px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-xs font-mono font-semibold text-slate-700 dark:text-slate-200">
-            Page {pageNumber} <span className="opacity-50">/</span> {numPages || '--'}
+          {/* Viewer Engine Toggle */}
+          <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-0.5 border border-slate-200 dark:border-slate-700 text-xs">
+            <button
+              onClick={() => setViewerEngine('precision')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-all ${viewerEngine === 'precision' ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+              title="Built-in PDF.js Precision Engine (XFA & AcroForm)"
+            >
+              Precision View
+            </button>
+            <button
+              onClick={() => setViewerEngine('adobe')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-all ${viewerEngine === 'adobe' ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+              title="Official Adobe PDF Embed API Engine"
+            >
+              Adobe Embed
+            </button>
           </div>
-
-          <button 
-            onClick={() => setPageNumber(p => Math.min(numPages || p, p + 1))}
-            disabled={pageNumber >= (numPages || 1)}
-            className="p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 cursor-pointer transition-colors"
-            title="Next Page"
-            aria-label="Next Page"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
         </div>
 
-        {/* Right: Zoom & Layout actions */}
-        <div className="flex items-center space-x-1 sm:space-x-2">
-          <button 
-            onClick={() => setScale(s => Math.max(0.5, Number((s - 0.2).toFixed(1))))}
-            className="p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
-            title="Zoom Out"
-            aria-label="Zoom Out"
-          >
-            <ZoomOut className="w-4 h-4" />
-          </button>
-          
-          <button
-            onClick={() => setScale(1.0)}
-            className="text-xs font-mono font-semibold text-slate-700 dark:text-slate-300 px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            title="Reset Zoom to 100%"
-          >
-            {Math.round(scale * 100)}%
-          </button>
-
-          <button 
-            onClick={() => setScale(s => Math.min(2.5, Number((s + 0.2).toFixed(1))))}
-            className="p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
-            title="Zoom In"
-            aria-label="Zoom In"
-          >
-            <ZoomIn className="w-4 h-4" />
-          </button>
-
-          <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
-
-          <button 
-            onClick={() => setIsFullscreen(f => !f)}
-            className="p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
-            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen View"}
-            aria-label={isFullscreen ? "Exit Fullscreen" : "Fullscreen View"}
-          >
-            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-          </button>
-
-          {fileUrl && (
-            <a
-              href={fileUrl}
-              download={fileName}
-              className="p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors inline-flex items-center"
-              title="Download PDF"
-            >
-              <Download className="w-4 h-4" />
-            </a>
-          )}
-        </div>
-      </div>
-
-      {/* Document Viewport Canvas */}
-      <div className="flex-1 overflow-auto bg-slate-200/60 dark:bg-[#060a14] p-4 sm:p-8 flex justify-center custom-scrollbar">
-        {fileUrl && (
-          <div className="shadow-2xl rounded-sm overflow-hidden ring-1 ring-slate-900/10 dark:ring-white/10 bg-white inline-block my-auto max-w-full">
-            <Document
-              key={fileUrl}
-              file={fileUrl}
-              onLoadSuccess={onDocumentLoadSuccess}
-              onLoadError={onDocumentLoadError}
-              loading={<PdfLoadingState />}
-              error={
-                <div className="p-8 text-center text-xs font-semibold text-rose-600 bg-rose-50 dark:bg-rose-950/40 rounded-2xl">
-                  Failed to render PDF using PDF.js engine.
-                </div>
-              }
-              options={pdfOptions}
-            >
-              <Page 
-                pageNumber={pageNumber} 
-                scale={scale} 
-                renderTextLayer={true}
-                renderAnnotationLayer={true}
-                renderForms={true}
-                renderStructTree={false} 
+        {viewerEngine === 'precision' && (
+          <>
+            {/* Center: Page Navigation */}
+            <div className="flex items-center space-x-1.5 sm:space-x-2">
+              <button 
+                onClick={() => setPageNumber(p => Math.max(1, p - 1))}
+                disabled={pageNumber <= 1}
+                className="p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 cursor-pointer transition-colors"
+                title="Previous Page"
+                aria-label="Previous Page"
               >
-                {({ page, scale: pageScale, rotate: pageRotate }) => (
-                  <XfaPageLayer 
-                    page={page} 
-                    scale={pageScale} 
-                    rotate={pageRotate} 
-                  />
-                )}
-              </Page>
-            </Document>
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              
+              <div className="px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-xs font-mono font-semibold text-slate-700 dark:text-slate-200">
+                Page {pageNumber} <span className="opacity-50">/</span> {numPages || '--'}
+              </div>
+
+              <button 
+                onClick={() => setPageNumber(p => Math.min(numPages || p, p + 1))}
+                disabled={pageNumber >= (numPages || 1)}
+                className="p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 cursor-pointer transition-colors"
+                title="Next Page"
+                aria-label="Next Page"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Right: Zoom & Layout actions */}
+            <div className="flex items-center space-x-1 sm:space-x-2">
+              <button 
+                onClick={() => setScale(s => Math.max(0.5, Number((s - 0.2).toFixed(1))))}
+                className="p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+                title="Zoom Out"
+                aria-label="Zoom Out"
+              >
+                <ZoomOut className="w-4 h-4" />
+              </button>
+              
+              <button
+                onClick={() => setScale(1.0)}
+                className="text-xs font-mono font-semibold text-slate-700 dark:text-slate-300 px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                title="Reset Zoom to 100%"
+              >
+                {Math.round(scale * 100)}%
+              </button>
+
+              <button 
+                onClick={() => setScale(s => Math.min(2.5, Number((s + 0.2).toFixed(1))))}
+                className="p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+                title="Zoom In"
+                aria-label="Zoom In"
+              >
+                <ZoomIn className="w-4 h-4" />
+              </button>
+
+              <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
+
+              <button 
+                onClick={() => setIsFullscreen(f => !f)}
+                className="p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+                title={isFullscreen ? "Exit Fullscreen" : "Fullscreen View"}
+                aria-label={isFullscreen ? "Exit Fullscreen" : "Fullscreen View"}
+              >
+                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </button>
+
+              {fileUrl && (
+                <a
+                  href={fileUrl}
+                  download={fileName}
+                  className="p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors inline-flex items-center"
+                  title="Download PDF"
+                >
+                  <Download className="w-4 h-4" />
+                </a>
+              )}
+            </div>
+          </>
+        )}
+
+        {viewerEngine === 'adobe' && (
+          <div className="flex items-center space-x-2">
+            {fileUrl && (
+              <a
+                href={fileUrl}
+                download={fileName}
+                className="p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors inline-flex items-center text-xs font-semibold gap-1.5"
+                title="Download PDF"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download</span>
+              </a>
+            )}
           </div>
         )}
       </div>
+
+      {/* Main Viewport */}
+      {viewerEngine === 'adobe' ? (
+        <div className="flex-1 w-full h-full bg-white dark:bg-[#070c18]">
+          <AdobePdfViewer
+            fileUrl={fileUrl}
+            fileName={fileName}
+            pdfType={docMeta?.type}
+          />
+        </div>
+      ) : (
+        <div className="flex-1 overflow-auto bg-slate-200/60 dark:bg-[#060a14] p-4 sm:p-8 flex justify-center custom-scrollbar">
+          {fileUrl && (
+            <div className="shadow-2xl rounded-sm overflow-hidden ring-1 ring-slate-900/10 dark:ring-white/10 bg-white inline-block my-auto max-w-full">
+              <Document
+                key={fileUrl}
+                file={fileUrl}
+                onLoadSuccess={onDocumentLoadSuccess}
+                onLoadError={onDocumentLoadError}
+                loading={<PdfLoadingState />}
+                error={
+                  <div className="p-8 text-center text-xs font-semibold text-rose-600 bg-rose-50 dark:bg-rose-950/40 rounded-2xl">
+                    Failed to render PDF using PDF.js engine.
+                  </div>
+                }
+                options={pdfOptions}
+              >
+                <Page 
+                  pageNumber={pageNumber} 
+                  scale={scale} 
+                  renderTextLayer={true}
+                  renderAnnotationLayer={true}
+                  renderForms={true}
+                  renderStructTree={false} 
+                >
+                  {({ page, scale: pageScale, rotate: pageRotate }) => (
+                    <XfaPageLayer 
+                      page={page} 
+                      scale={pageScale} 
+                      rotate={pageRotate} 
+                    />
+                  )}
+                </Page>
+              </Document>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
